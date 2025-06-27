@@ -1,0 +1,6 @@
+FROM ubuntu:latest
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends build-essential cmake git libjsoncpp-dev uuid-dev zlib1g-dev libssl-dev
+WORKDIR /opt/drogon
+RUN git clone --depth 1 https://github.com/drogonframework/drogon.git .
+RUN mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/usr/local .. && make -j$(nproc) && make install

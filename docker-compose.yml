@@ -1,0 +1,56 @@
+
+services:
+  db:
+    image: postgres:14.4
+    container_name: myapp-drogon-db
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d myapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  drogon-dev:
+    image: ubuntu:latest
+    container_name: card-game-drogon-dev
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "8080:8088"
+    environment:
+      - CMAKE_BUILD_TYPE=Debug
+    command: >
+      bash -c "
+      apt-get update &&
+      apt-get install -y --no-install-recommends build-essential cmake git libjsoncpp-dev uuid-dev zlib1g-dev libssl-dev ca-certificates doxygen graphviz dia xz-utils && 
+      update-ca-certificates &&
+      rm -rf /opt/drogon &&
+      git clone https://github.com/drogonframework/drogon.git &&
+      cd drogon &&
+      echo "++++++++++++++++++++++++++++++++ Finish cloning ++++++++++++++++++++++++++++++++" &&
+      mkdir build &&
+      cd build &&
+      cmake .. -DCMAKE_INSTALL_PREFIX=Release .. &&
+      make -j$(nproc) &&
+      sudo make install &&
+      cd /app &&
+      mkdir -p build &&
+      cd build &&
+      cmake .. &&
+      make -j$(nproc) &&
+      cd .. &&
+      ./build/card-game-example-project -c config.json
+      "
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
